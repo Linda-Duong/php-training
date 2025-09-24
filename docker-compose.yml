@@ -1,0 +1,38 @@
+version: "3.9"
+
+volumes:
+  mysql-data:
+  redis-data:
+
+services:
+  web-backend:
+    build: ./config/backend
+    container_name: web-backend
+    ports:
+      - "8080:80"
+    volumes:
+      - ./:/var/www/html
+      - ./config/php.ini:/usr/local/etc/php/conf.d/custom-php.ini
+    depends_on:
+      - web-mysql
+      - web-redis
+
+  web-mysql:
+    container_name: web-mysql
+    image: mysql:8.0
+    platform: linux/arm64/v8
+    ports:
+      - "3307:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: app_web1
+    volumes:
+      - mysql-data:/var/lib/mysql
+
+  web-redis:
+    image: redis:7-alpine
+    container_name: web-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
