@@ -1,14 +1,26 @@
 <?php
 require_once(__DIR__ . '/models/UserModel.php');
+require_once(__DIR__ . '/libs/csrf.php');
+
 $userModel = new UserModel();
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     header('Content-Type: application/json');
 
-    $username = $_POST['username'] ?? '';
-    $password = $_POST['password'] ?? '';
+    // CSRF check
+    $csrf = $_POST['csrf_token'] ?? '';
+    if (!csrf_validate_token($csrf)) {
+        echo json_encode([
+            "status" => "error",
+            "message" => "Invalid CSRF token!"
+        ]);
+        exit;
+    }
 
-    if (!empty($username) && !empty($password)) {
+    $username = trim($_POST['username'] ?? '');
+    $password = trim($_POST['password'] ?? '');
+
+    if ($username && $password) {
         $user = $userModel->auth($username, $password);
         if ($user) {
             echo json_encode([
@@ -43,10 +55,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <style>
         body { background:#f5f5f5; }
         #loginbox { margin-top:50px; }
+        .panel-title { font-weight:bold; }
     </style>
 </head>
 <body>
-<?php include 'views/header.php' ?>
+<?php include 'views/header.php'; ?>
 
 <div class="container">
     <div id="loginbox" class="mainbox col-md-6 col-md-offset-3 col-sm-8 col-sm-offset-2">
@@ -59,16 +72,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             </div>
 
             <div style="padding-top:30px" class="panel-body">
-                <form id="loginForm" class="form-horizontal" role="form">
-                    
+                <form id="loginForm" class="form-horizontal" method="POST">
+
+                    <!-- CSRF token -->
+                    <?php echo csrf_input_tag(); ?>
+
                     <div class="input-group" style="margin-bottom:25px">
                         <span class="input-group-addon"><i class="glyphicon glyphicon-user"></i></span>
-                        <input type="text" class="form-control" name="username" placeholder="username or email">
+                        <input type="text" class="form-control" name="username" placeholder="username or email" required>
                     </div>
 
                     <div class="input-group" style="margin-bottom:25px">
                         <span class="input-group-addon"><i class="glyphicon glyphicon-lock"></i></span>
-                        <input type="password" class="form-control" name="password" placeholder="password">
+                        <input type="password" class="form-control" name="password" placeholder="password" required>
                     </div>
 
                     <div class="input-group" style="margin-bottom:25px">
@@ -86,7 +102,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                     <div class="form-group">
                         <div class="col-md-12 control">
-                            Don't have an account!
+                            Don't have an account?
                             <a href="form_user.php">Sign Up Here</a>
                         </div>
                     </div>
