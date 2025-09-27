@@ -117,8 +117,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 document.querySelector("#loginForm").addEventListener("submit", async function(e) {
     e.preventDefault();
     let fd = new FormData(this);
-    let res = await fetch("login.php", { method: "POST", body: fd });
-    let data = await res.json();
+
+    // IMPORTANT: credentials:'same-origin' ensures browser sends session cookie (PHPSESSID)
+    // Change to 'include' if cross-origin and server allows credentials
+    let res = await fetch("login.php", { 
+        method: "POST", 
+        body: fd,
+        credentials: 'same-origin'
+    });
+
+    // handle non-JSON / network errors gracefully
+    let data;
+    try {
+        data = await res.json();
+    } catch (err) {
+        alert("Lỗi kết nối hoặc response không hợp lệ");
+        return;
+    }
+
     if (data.status === "success") {
         localStorage.setItem("user", JSON.stringify(data.user));
         alert("Login thành công!");
